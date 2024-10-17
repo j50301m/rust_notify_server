@@ -1,0 +1,10 @@
+version: "3"
+
+services:
+  notify_grpc_server:
+    hostname: notify_grpc_server
+    image: rpc_server
+    ports:
+      - 1680:1680
+    env_file:
+      - .env

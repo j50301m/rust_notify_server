@@ -1,0 +1,12 @@
+# 使用kind在本地開發時，快速驗證 可以使用這個kind-config.yaml
+# 使用以下指令建立kind cluster
+# kind create cluster --config kind-config.yaml
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  extraPortMappings:
+  - containerPort: 31680
+    hostPort: 1680
+    protocol: TCP

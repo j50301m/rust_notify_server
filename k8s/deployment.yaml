@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notify-server-deployment
+  labels:
+    app: notify-server-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: notify-server-deployment
+  template:
+    metadata:
+      labels:
+        app: notify-server-deployment
+    spec:
+      serviceAccountName: notify-server-account
+      containers:
+      - name: notify-grpc-server
+        image: notify-grpc-server:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 1680
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: DEPLOYMENT_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['app']
+        envFrom:
+        -  configMapRef:
+            name: notify-server-env
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+

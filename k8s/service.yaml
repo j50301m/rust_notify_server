@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: notify-server-service
+  labels:
+    app: notify-server-service
+spec:
+  selector:
+    app: notify-server-deployment
+  ports:
+    - protocol: TCP
+      port: 1680
+      targetPort: 1680
+      nodePort: 31680
+  type: NodePort

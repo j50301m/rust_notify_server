@@ -1,0 +1,78 @@
+stages:
+  - build
+  - deploy
+
+dev-build:
+  stage: build
+  environment: dev
+  script:
+    - sed -i "s/branch = \".*\"/branch = \"$CI_COMMIT_BRANCH\"/g" Cargo.toml
+    - docker build --no-cache -t notify-grpc-server-dev .
+    - docker tag notify-grpc-server-dev repo.kgs.asia/deploy/notify-grpc-server-dev:${CI_PIPELINE_ID}
+    - docker tag notify-grpc-server-dev repo.kgs.asia/deploy/notify-grpc-server-dev:latest
+    - docker push repo.kgs.asia/deploy/notify-grpc-server-dev:latest
+    - docker push repo.kgs.asia/deploy/notify-grpc-server-dev:${CI_PIPELINE_ID}
+    - docker rmi repo.kgs.asia/deploy/notify-grpc-server-dev:latest
+    - docker rmi repo.kgs.asia/deploy/notify-grpc-server-dev:${CI_PIPELINE_ID}
+    - docker rmi notify-grpc-server-dev:latest
+  only:
+    - dev
+  tags:
+    - development
+
+stg-build:
+  stage: build
+  environment: stg
+  script:
+    - sed -i "s/branch = \".*\"/branch = \"$CI_COMMIT_BRANCH\"/g" Cargo.toml
+    - docker build --no-cache -t notify-grpc-server-stg .
+    - docker tag notify-grpc-server-stg repo.kgs.asia/deploy/notify-grpc-server-stg:${CI_PIPELINE_ID}
+    - docker tag notify-grpc-server-stg repo.kgs.asia/deploy/notify-grpc-server-stg:latest
+    - docker push repo.kgs.asia/deploy/notify-grpc-server-stg:latest
+    - docker push repo.kgs.asia/deploy/notify-grpc-server-stg:${CI_PIPELINE_ID}
+    - docker rmi repo.kgs.asia/deploy/notify-grpc-server-stg:latest
+    - docker rmi repo.kgs.asia/deploy/notify-grpc-server-stg:${CI_PIPELINE_ID}
+    - docker rmi notify-grpc-server-stg:latest
+  only:
+    - stg
+  tags:
+    - development
+
+
+dev-deploy:
+  stage: deploy
+  environment: dev
+  script:
+    - rm -rf .env
+    - cat "${ENV}" >> .env
+    - cat "${PEM}" >> private.pem
+    - chmod 400 ./private.pem
+    - ssh -i ./private.pem -o StrictHostKeyChecking=no -t rocky@${TARGET} 'rm -rf ~/${CI_PROJECT_NAME}/.env'
+    - scp -i ./private.pem .env rocky@${TARGET}:~/${CI_PROJECT_NAME}/
+    - ssh -i ./private.pem -o StrictHostKeyChecking=no -t rocky@${TARGET} 'sudo su - -c "sh '/home/rocky/${CI_PROJECT_NAME}'/start.sh"'
+    - rm -rf /home/gitlab-runner/.ssh/known_hosts
+    - rm -rf .env
+    - rm -rf private.pem
+  only:
+    - dev
+  tags:
+    - development
+
+stg-deploy:
+  stage: deploy
+  environment: stg
+  script:
+    - rm -rf .env
+    - cat "${ENV}" >> .env
+    - cat "${PEM}" >> private.pem
+    - chmod 400 ./private.pem
+    - ssh -i ./private.pem -o StrictHostKeyChecking=no -t rocky@${TARGET} 'rm -rf ~/${CI_PROJECT_NAME}/.env'
+    - scp -i ./private.pem .env rocky@${TARGET}:~/${CI_PROJECT_NAME}/
+    - ssh -i ./private.pem -o StrictHostKeyChecking=no -t rocky@${TARGET} 'sudo su - -c "sh '/home/rocky/${CI_PROJECT_NAME}'/start.sh"'
+    - rm -rf /home/gitlab-runner/.ssh/known_hosts
+    - rm -rf .env
+    - rm -rf private.pem
+  only:
+    - stg
+  tags:
+    - development
